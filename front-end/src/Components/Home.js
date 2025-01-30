@@ -17,53 +17,73 @@ const Home = ({callStatus,updateCallStatus,setLocalStream,
 
     //called on "Call" or "Answer"
     const initCall = async(typeOfCall)=>{
-
+        await prepForCall(callStatus,updateCallStatus,setLocalStream)
+        //console.log("gum access granted!")
+        setTypeOfCall(typeOfCall) //offer or answer
     }
 
     //Test backend connection
-    // useEffect(()=>{
-    //     const test = async()=>{
-    //         const socket = socketConnection("test")
-    //     }
-    //     //if this works, you will get pong in the console!
-    //     test()
-    // },[])
+     //useEffect(()=>{
+       //  const test = async()=>{
+         //    const socket = socketConnection("test")
+      // }
+         //if this works, you will get pong in the console!
+         //test()
+     //},[])
     
     //Nothing happens until the user clicks join
     //(Helps with React double render)
     useEffect(()=>{
-
+        if(joined){
+            const userName = prompt("Enter username");
+            setUserName(userName);
+            const setCalls = data =>{
+                setAvailableCalls(data);
+                console.log(data);
+            }
+            const socket = socketConnection(userName)
+            socket.on('availableOffers',setCalls);
+            socket.on('newOfferWaiting',setCalls)
+        }
     },[joined])
 
 
     //We have media via GUM. setup the peerConnection w/listeners
     useEffect(()=>{
-
+        if(callStatus.haveMedia && !peerConnection){
+            //prepForCall has finished runnin and updated Callstatus
+            const { peerConnection, remoteStream} = createPeerConnection(userName,typeOfCall);
+            setPeerConnection(peerConnection)
+            setRemoteStream(remoteStream)
+        }
     },[callStatus.haveMedia])
 
     //We know which type of client this is and have PC.
     //Add socketlisteners
     useEffect(()=>{
-
+        if(typeOfCall && peerConnection){
+            const socket=socketConnection(userName)
+            clientSocketListeners(socket,typeOfCall,callStatus,
+                updateCallStatus,peerConnection)
+        }
     },[typeOfCall,peerConnection])
 
     //once remoteStream AND pc are ready, navigate
     useEffect(()=>{
-
+        if(remoteStream && peerConnection){
+        navigate(`/${typeOfCall}?token=${Math.random()}`)
+        }
     },[remoteStream,peerConnection])
-
-    useEffect(()=>{
-        
-    })
 
     const call = async()=>{
         //call related stuff goes here
-        
+        initCall('offer')
     }
 
     const answer = (callData)=>{
         //answer related stuff goes here
-
+        initCall('answer')
+        setOfferData(callData)
     }
 
     if(!joined){

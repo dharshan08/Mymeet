@@ -1,4 +1,3 @@
-
 const clientSocketListeners = (socket,typeOfCall,callStatus,
     updateCallStatus,peerConnection)=>{
     socket.on('answerResponse',entireOfferObj=>{
@@ -11,7 +10,9 @@ const clientSocketListeners = (socket,typeOfCall,callStatus,
 
     socket.on('receivedIceCandidateFromServer',iceC=>{
         if(iceC){
-            peerConnection.addIceCandidate(iceC);
+            peerConnection.addIceCandidate(iceC).catch(err=>{
+                console.log("Chrome thinks there is an error. There isn't...")
+            })
             console.log(iceC)
             console.log("Added an iceCandidate to existing page presence")
             // setShowCallInfo(false);

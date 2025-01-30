@@ -14,34 +14,59 @@ const CallerVideo = ({remoteStream, localStream,peerConnection,callStatus,update
 
     //send back to home if no localStream
     useEffect(()=>{
-
+        if(!localStream){
+            navigate(`/`)
+        }else{
+            remoteFeedEl.current.srcObject = remoteStream
+            localFeedEl.current.srcObject = localStream
+        }
     },[])
     
     //set video tags
-    useEffect(()=>{
-
+/*  useEffect(()=>{
+        
     },[])
-
+*/
     //if we have tracks, disable the video message
     useEffect(()=>{
         if(peerConnection){
-
+            if(peerConnection){
+                peerConnection.ontrack = e =>{
+                    if(e?.streams?.length){
+                        setVideoMessage("")
+                    }else{
+                        setVideoMessage("Disconnected...")
+                    }
+                }
+            }
         }
     },[peerConnection])
 
     //once the user has shared video, start WebRTC'ing :)
     useEffect(()=>{
-        
+        const shareVideoAsync = async()=>{
+            const offer = await peerConnection.createOffer()
+            peerConnection.setLocalDescription(offer)
+            // we can now start collecting icecandidates
+            // we need to emit the offer to the server
+            const socket= socketConnection(userName)
+            socket.emit('newOffer',offer)
+            setOfferCreated(true) //so that our useEffect does not make an offer again
+            setVideoMessage("Awaiting answer...") //update our VideoMessage box
+            console.log("created offer, setLocalDes, emitted offer, updated videoMessage")
+        }
+        if(!offerCreated && callStatus.videoEnabled){
+            //CREATE AN OFFER!
+            console.log("We have video and no offer..making offer")
+            shareVideoAsync()
+        }
     },[callStatus.videoEnabled,offerCreated])
     
 
     useEffect(()=>{
-        console.log(callStatus)
-        const addAnswerAsync = async()=>{
-            console.log(callStatus)
-            await peerConnection.setRemoteDescription(callStatus.answer);
-            console.log(peerConnection.signalingState)
-            console.log("Answer added!")
+        const addAnswerAsync= async()=>{
+            await peerConnection.setRemoteDescription(callStatus.answer)
+            console.log("Answer added!!")
         }
         if(callStatus.answer){
             addAnswerAsync()

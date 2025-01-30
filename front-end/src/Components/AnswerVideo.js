@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import './VideoPage.css'
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import socketConnection from '../webrtcUtilities/socketConnection'
 import ActionButtons from './ActionButtons/ActionButtons'
 import VideoMessageBox from "./VideoMessageBox";
@@ -15,30 +15,66 @@ const AnswerVideo = ({remoteStream, localStream,peerConnection,
     
     //send back to home if no localStream
     useEffect(()=>{
-        
-
-    })
+        if(!localStream){
+            navigate(`/`)
+        }else{
+            remoteFeedEl.current.srcObject = remoteStream
+            localFeedEl.current.srcObject = localStream
+        }
+    },[])
 
     //set video tags
-    useEffect(()=>{
-
-    },[])
+   // useEffect(()=>{
+//
+  //  },[])
 
     //if we have tracks, disable the video message
     useEffect(()=>{
-
+        if(peerConnection){
+            if(peerConnection){
+                peerConnection.ontrack = e =>{
+                    if(e?.streams?.length){
+                        setVideoMessage("")
+                    }else{
+                        setVideoMessage("Disconnected...")
+                    }
+                }
+            }
+        }
     },[peerConnection])
 
     //User has enabled video, but not made answer
     useEffect(()=>{
-
+        const addOfferAndCreateAnswerAsync = async() =>{
+            //add the offer
+            await peerConnection.setRemoteDescription(offerData.offer)
+            console.log(peerConnection.signalingState) // have remote-offer
+            //now that we have the offer set, make our answer
+            console.log("Creating an answer...")
+            const answer = await peerConnection.createAnswer()
+            peerConnection.setLocalDescription(answer)
+            const copyOfferData = {...offerData}
+            copyOfferData.answer= answer
+            copyOfferData.answerUserName = userName
+            const socket = socketConnection(userName)
+            const offerIceCandidates = await socket.emitWithAck(
+                'newAnswer',copyOfferData)
+            offerIceCandidates.forEach(c => {
+                peerConnection.addIceCandidate(c);
+                console.log("=== added ice candidate from offerer")
+            });
+            
+        }
+        if(!answerCreated && callStatus.videoEnabled){
+                addOfferAndCreateAnswerAsync()
+        }
     },[callStatus.videoEnabled,answerCreated])
     
 
     //
-    const shareVideo = async()=>{
-
-    }
+    //const shareVideo = async()=>{
+//
+  //  }
 
     return (
         <div>
